@@ -1,0 +1,173 @@
+<script type="text/javascript" >
+  $(document).ready(function(){
+    $("#cipher_form").submit(function(){
+      var cipher = $("#cipher_text").val();
+      var keylen = $("#keylen_range").val();
+      $.ajax({
+          type: "POST",
+          url: "/main/keylen_friedman_analysis.json",
+          data: {cipher_text: cipher, keylen_range: keylen },        
+          dataType: "JSON"
+        }).done(function(response){
+          $.each(response , function(key, value){
+            $("#keys").append("<p>" + "Index of coincidence: " + "<b>" + value[0].toFixed(5) + "</b>" + " || " + "Key length: " + "<b>" + value[1].toFixed() + "</b>" + "</p>");
+          });
+          
+          $("#keylen_range_calculated").val(response[response.length-1][1]);
+          $("#keylen").fadeIn("slow");
+          
+          $("#keys").fadeIn("slow");
+        });
+      return false;
+    });
+    
+    attack = function() {
+      var key_length = $("#keylen_range_calculated").val();
+      if (key_length != "" ) {
+        var cipher = $("#cipher_text").val();
+        $.ajax({
+          type: "POST",
+          url: "/main/attack.json",
+          data: {cipher_text: cipher, key_length: key_length },        
+          dataType: "JSON"
+        }).done(function(response){
+          $("#key_expected").append("<p><b>" + response[0] + "</b></p>");
+          $("#deciphered_text_expected").append("<span>" + response[1] + "</span>");
+          
+          $("#key_expected").fadeIn("slow");
+          $("#deciphered_text_expected").show("slow");
+        });
+      }else{
+        alert("key length cannot be blank");
+      };
+      return false;
+    };
+    
+  });
+</script>
+
+<!-- CSS -->
+<style>
+  .content{
+    width: 80% ;
+    margin: 10px;
+  }
+  
+  .maximum_expected_key_length{
+    color: rgb(98, 196, 98);
+    font-weight: bold;
+  }
+  
+  #keys{
+    border: 2px solid #2E77B6;
+    padding: 5px;
+  }
+  
+  #keys h4{
+    color: #2E77B6;
+  }
+  
+  .crack{
+    background-color: rgb(98, 196, 98);
+    color: white;
+    width: 20%;
+  }
+  
+  .crack:enabled{
+    background-color: rgb(98, 196, 98);
+    color: white;
+    width: 20%;
+  }
+  
+  .attack{
+    background-color: red;
+    color: white;
+    width: 20%;
+  }
+  
+  .attack:enabled{
+    background-color: rgb(206, 49, 49);
+    color: white;
+    width: 20%;
+  }
+  
+  #key_expected{
+    border: 2px solid red;
+    padding: 5px;
+  }
+  
+  #key_expected h4{
+    color: red;
+  }
+  
+  #deciphered_text_expected{
+    border: 2px solid green;
+    padding: 5px;
+    width: 100%;
+  }
+  
+  #deciphered_text_expected h4{
+    color: green;
+  }
+  
+  #deciphered_text_expected span{
+    display: block;
+    word-break: break-all;
+  }
+  
+  #keylen h4{
+    color: green;
+  }
+  
+  .keylen_range_calculated{
+    width: 7%;
+    color: rgb(206, 49, 49);
+    font-weight: bold;
+  }
+</style>  
+<!-- Nav tabs -->
+<ul class="nav nav-tabs">
+  <li class="active"><a href="#home" data-toggle="tab"><b>Vigenere Cipher Cracker</b></a></li>
+</ul>
+
+<div class="content">
+  <!-- Tab panes -->
+  <div class="tab-content">
+  <%= form_for('/cipher_cracker/' , :method => :put , :html => {:id => 'cipher_form'}) do -%>
+    <div class="form-group">
+      <%= label_tag :cipher_text %>
+      <%= text_area_tag :cipher_text , nil , {:rows => '12', :class => 'form-control required' ,:placeholder => 'enter your text here...' , 'required' => "true" } %>
+    </div>
+    <div class="form-group">
+      <%= label_tag :maximum_expected_key_length %>
+      <%= number_field_tag :keylen_range , nil , {:in => 2...100, :class => 'form-control maximum_expected_key_length', :placeholder => 'enter your maximum expected key length number...' , 'required' => 'true' } %>
+    </div>
+    <%= submit_tag :crack , {:class => 'btn btn-default crack'} %>
+  <% end -%>
+  </div>
+  
+  <br />
+  <div id="key_expected" style="display: none;">
+    <h4><b>Expected key:</b></h4>  
+  </div>
+  
+  <br />
+  <div id="deciphered_text_expected" style="display: none;">
+    <h4><b>Dechiphered text with expected key:</b></h4>  
+  </div>
+  
+  <br />
+  <div id="keylen" style="display: none;">
+    <h4><b>What computer thinks the key length is after applying the beautiful <a href="http://en.wikipedia.org/wiki/Vigen%C3%A8re_cipher#Friedman_test" target="_blank" >Friedman test</a> :-) </b></h4>
+    <%= number_field_tag :keylen_range_calculated , nil , {:in => 2...30, :class => 'form-control keylen_range_calculated', 'required' => 'true' } %>
+    <br />
+    <%= submit_tag :attack , {:class => 'btn btn-default attack' , :onclick => "attack()" } %>
+  </div>
+  
+  <br />
+  <div id="keys" style="display: none;">
+    <h4><b>Expected key lengths with index of coincidence:</b></h4>  
+  </div>  
+
+  
+</div>
